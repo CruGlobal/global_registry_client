@@ -22,7 +22,7 @@ module GlobalRegistry
     end
 
     def self.delete(id)
-      request(:put, {}, path_with_id(id))
+      request(:delete, {}, path_with_id(id))
     end
 
 
