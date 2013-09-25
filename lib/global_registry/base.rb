@@ -55,9 +55,9 @@ module GlobalRegistry
       when 200..299
         Oj.load(response)
       when 400
-        raise RestClient::BadRequest, response.to_s
+        raise RestClient::BadRequest, response
       when 500
-        raise RestClient::InternalServerError, response.to_s
+        raise RestClient::InternalServerError, response
       else
         puts response.inspect
         puts request.inspect
