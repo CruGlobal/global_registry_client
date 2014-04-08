@@ -36,11 +36,11 @@ module GlobalRegistry
 
       case method
       when :post
-        RestClient.post(url, params, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
+        RestClient.post(url, params.to_json, :content_type => :json, :accept => :json, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       when :put
-        RestClient.put(url, params, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
+        RestClient.put(url, params.to_json, :content_type => :json, :accept => :json, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       else
