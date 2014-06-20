@@ -36,11 +36,11 @@ module GlobalRegistry
 
       case method
       when :post
-        RestClient.post(url, params, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
+        RestClient.post(url, params.to_json, :content_type => :json, :accept => :json, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       when :put
-        RestClient.put(url, params, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
+        RestClient.put(url, params.to_json, :content_type => :json, :accept => :json, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       else
@@ -56,12 +56,14 @@ module GlobalRegistry
         Oj.load(response)
       when 400
         raise RestClient::BadRequest, response
+      when 404
+        raise RestClient::ResourceNotFound, response
       when 500
         raise RestClient::InternalServerError, response
       else
         puts response.inspect
         puts request.inspect
-        raise result.inspect
+        raise result.to_s
       end
     end
 
