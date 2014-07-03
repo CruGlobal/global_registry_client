@@ -14,7 +14,7 @@ module GlobalRegistry
     end
 
     def base_url
-      @base_url ||= "https://api.leadingwithinformation.com/"
+      @base_url ||= "https://api.global-registry.org/"
     end
 
   end
