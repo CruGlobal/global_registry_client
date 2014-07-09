@@ -44,7 +44,7 @@ module GlobalRegistry
           handle_response(response, request, result)
         }
       else
-        RestClient::Request.execute(:method => method, :url => url, :headers => {params: params, authorization: "Bearer #{GlobalRegistry.access_token}"}, :timeout => -1) { |response, request, result, &block|
+        RestClient::Request.execute(:method => method, :url => url, :headers => {params: params, authorization: "Bearer #{GlobalRegistry.access_token}", :accept => :json}, :timeout => -1) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       end
