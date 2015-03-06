@@ -5,8 +5,8 @@ require 'retryable'
 module GlobalRegistry
   class Base
 
-    def self.find(id)
-      request(:get, {}, path_with_id(id))
+    def self.find(id, params = {})
+      request(:get, params, path_with_id(id))
     end
 
     def self.get(params = {})
