@@ -25,6 +25,16 @@ module GlobalRegistry
       request(:delete, {}, path_with_id(id))
     end
 
+    def self.delete_or_ignore(id)
+      begin
+        delete(id)
+      rescue RestClient::Exception => e
+        unless e.response.code.to_i == 404
+          raise
+        end
+      end
+    end
+
 
     def self.request(method, params, path = nil)
       raise 'You need to configure GlobalRegistry with your access_token.' unless GlobalRegistry.access_token
@@ -77,5 +87,7 @@ module GlobalRegistry
 
   end
 end
+
+
 
 
