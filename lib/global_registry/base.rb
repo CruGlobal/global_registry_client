@@ -4,24 +4,43 @@ require 'retryable'
 
 module GlobalRegistry
   class Base
+    def initialize(args = {})
+      @base_url = args[:base_url]
+      @access_token = args[:access_token]
+    end
 
     def self.find(id, params = {})
+      request(:get, params, path_with_id(id))
+    end
+    def find(id, params = {})
       request(:get, params, path_with_id(id))
     end
 
     def self.get(params = {})
       request(:get, params)
     end
+    def get(params = {})
+      request(:get, params)
+    end
 
     def self.post(params = {})
+      request(:post, params)
+    end
+    def post(params = {})
       request(:post, params)
     end
 
     def self.put(id, params = {})
       request(:put, params, path_with_id(id))
     end
+    def put(id, params = {})
+      request(:put, params, path_with_id(id))
+    end
 
     def self.delete(id)
+      request(:delete, {}, path_with_id(id))
+    end
+    def delete(id)
       request(:delete, {}, path_with_id(id))
     end
 
@@ -37,30 +56,49 @@ module GlobalRegistry
 
 
     def self.request(method, params, path = nil)
-      raise 'You need to configure GlobalRegistry with your access_token.' unless GlobalRegistry.access_token
+      new.request(method, params, path)
+    end
 
-      path ||= default_path
-      url = GlobalRegistry.base_url
+    def request(method, params, path = nil)
+      raise 'You need to configure GlobalRegistry with your access_token.' unless access_token
+
+      path ||= Base.default_path
+      url = base_url
       url += '/' unless url.last == '/'
       url += path
 
       case method
       when :post
-        RestClient.post(url, params.to_json, :content_type => :json, :accept => :json, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
+        post_headers = { content_type: :json, accept: :json, authorization: "Bearer #{access_token}", timeout: -1 }
+        RestClient.post(url, params.to_json, post_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       when :put
-        RestClient.put(url, params.to_json, :content_type => :json, :accept => :json, authorization: "Bearer #{GlobalRegistry.access_token}", :timeout => -1) { |response, request, result, &block|
+        put_headers = { content_type: :json, accept: :json, authorization: "Bearer #{access_token}", timeout: -1 }
+        RestClient.put(url, params.to_json, put_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       else
-        RestClient::Request.execute(:method => method, :url => url, :headers => {params: params, authorization: "Bearer #{GlobalRegistry.access_token}", :accept => :json}, :timeout => -1) { |response, request, result, &block|
+        get_args = { method: method, url: url, timeout: -1,
+                     headers: { params: params, authorization: "Bearer #{access_token}", accept: :json }
+                   }
+        RestClient::Request.execute(get_args) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       end
     end
 
-    def self.handle_response(response, request, result)
+    def self.default_path
+      to_s.split('::').last.underscore.pluralize
+    end
+
+    def self.path_with_id(id)
+      "#{default_path}/#{id}"
+    end
+
+    private
+
+    def handle_response(response, request, result)
       case response.code
       when 200..299
         Oj.load(response)
@@ -77,14 +115,13 @@ module GlobalRegistry
       end
     end
 
-    def self.default_path
-      to_s.split('::').last.underscore.pluralize
+    def base_url
+      @base_url || GlobalRegistry.base_url
     end
 
-    def self.path_with_id(id)
-      "#{default_path}/#{id}"
+    def access_token
+      @access_token || GlobalRegistry.access_token
     end
-
   end
 end
 
