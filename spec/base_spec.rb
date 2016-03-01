@@ -7,7 +7,7 @@ describe 'Base' do
           .with(headers: {authorization: 'Bearer asdf'})
           .to_return(:body => {a: 'b'}.to_json)
     end
-    
+
     it 'finds something' do
       response = GlobalRegistry::Base.get
       expect(response).to be_a Hash
