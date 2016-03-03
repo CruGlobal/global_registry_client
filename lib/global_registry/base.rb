@@ -7,6 +7,7 @@ module GlobalRegistry
     def initialize(args = {})
       @base_url = args[:base_url]
       @access_token = args[:access_token]
+      @xff = args[:xff]
     end
 
     def self.find(id, params = {})
@@ -69,18 +70,18 @@ module GlobalRegistry
 
       case method
       when :post
-        post_headers = { content_type: :json, accept: :json, authorization: "Bearer #{access_token}", timeout: -1 }
+        post_headers = default_headers.merge(content_type: :json, timeout: -1)
         RestClient.post(url, params.to_json, post_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       when :put
-        put_headers = { content_type: :json, accept: :json, authorization: "Bearer #{access_token}", timeout: -1 }
+        put_headers = default_headers.merge(content_type: :json, timeout: -1)
         RestClient.put(url, params.to_json, put_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       else
         get_args = { method: method, url: url, timeout: -1,
-                     headers: { params: params, authorization: "Bearer #{access_token}", accept: :json }
+                     headers: default_headers.merge(params: params)
                    }
         RestClient::Request.execute(get_args) { |response, request, result, &block|
           handle_response(response, request, result)
@@ -97,6 +98,12 @@ module GlobalRegistry
     end
 
     private
+
+    def default_headers
+      headers = { authorization: "Bearer #{access_token}", accept: :json }
+      headers = headers.merge('X-Forwarded-For': @xff) if @xff.present?
+      headers
+    end
 
     def handle_response(response, request, result)
       case response.code
