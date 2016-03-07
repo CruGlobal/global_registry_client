@@ -10,58 +10,58 @@ module GlobalRegistry
       @xff = args[:xff]
     end
 
-    def self.find(id, params = {})
-      new.find(id, params)
+    def self.find(id, params = {}, headers = {})
+      new.find(id, params, headers)
     end
-    def find(id, params = {})
-      request(:get, params, path_with_id(id))
-    end
-
-    def self.get(params = {})
-      new.get(params)
-    end
-    def get(params = {})
-      request(:get, params)
+    def find(id, params = {}, headers = {})
+      request(:get, params, path_with_id(id), headers)
     end
 
-    def self.post(params = {})
-      new.post(params)
+    def self.get(params = {}, headers = {})
+      new.get(params, headers)
     end
-    def post(params = {})
-      request(:post, params)
-    end
-
-    def self.put(id, params = {})
-      new.put(id, params)
-    end
-    def put(id, params = {})
-      request(:put, params, path_with_id(id))
+    def get(params = {}, headers = {})
+      request(:get, params, nil, headers)
     end
 
-    def self.delete(id)
-      new.delete(id)
+    def self.post(params = {}, headers = {})
+      new.post(params, headers)
     end
-    def delete(id)
-      request(:delete, {}, path_with_id(id))
+    def post(params = {}, headers = {})
+      request(:post, params, nil, headers)
     end
 
-    def self.delete_or_ignore(id)
-      delete(id)
+    def self.put(id, params = {}, headers = {})
+      new.put(id, params, headers)
+    end
+    def put(id, params = {}, headers = {})
+      request(:put, params, path_with_id(id), headers)
+    end
+
+    def self.delete(id, headers = {})
+      new.delete(id, headers)
+    end
+    def delete(id, headers = {})
+      request(:delete, {}, path_with_id(id), headers)
+    end
+
+    def self.delete_or_ignore(id, headers = {})
+      delete(id, headers)
     rescue RestClient::Exception => e
       raise unless e.response.code.to_i == 404
     end
-    def delete_or_ignore(id)
-      delete(id)
+    def delete_or_ignore(id, headers = {})
+      delete(id, headers)
     rescue RestClient::Exception => e
       raise unless e.response.code.to_i == 404
     end
 
 
-    def self.request(method, params, path = nil)
-      new.request(method, params, path)
+    def self.request(method, params, path = nil, headers = {})
+      new.request(method, params, path, headers)
     end
 
-    def request(method, params, path = nil)
+    def request(method, params, path = nil, headers = {})
       raise 'You need to configure GlobalRegistry with your access_token.' unless access_token
 
       path ||= default_path
@@ -71,18 +71,18 @@ module GlobalRegistry
 
       case method
       when :post
-        post_headers = default_headers.merge(content_type: :json, timeout: -1)
+        post_headers = default_headers.merge(content_type: :json, timeout: -1).merge(headers)
         RestClient.post(url, params.to_json, post_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       when :put
-        put_headers = default_headers.merge(content_type: :json, timeout: -1)
+        put_headers = default_headers.merge(content_type: :json, timeout: -1).merge(headers)
         RestClient.put(url, params.to_json, put_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       else
         get_args = { method: method, url: url, timeout: -1,
-                     headers: default_headers.merge(params: params)
+                     headers: default_headers.merge(params: params).merge(headers)
                    }
         RestClient::Request.execute(get_args) { |response, request, result, &block|
           handle_response(response, request, result)
