@@ -64,7 +64,7 @@ module GlobalRegistry
     def request(method, params, path = nil)
       raise 'You need to configure GlobalRegistry with your access_token.' unless access_token
 
-      path ||= self.class.default_path
+      path ||= default_path
       url = base_url
       url += '/' unless url.last == '/'
       url += path
@@ -90,11 +90,11 @@ module GlobalRegistry
       end
     end
 
-    def self.default_path
-      to_s.split('::').last.underscore.pluralize
+    def default_path
+      self.class.to_s.split('::').last.underscore.pluralize
     end
 
-    def self.path_with_id(id)
+    def path_with_id(id)
       "#{default_path}/#{id}"
     end
 

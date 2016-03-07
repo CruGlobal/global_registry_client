@@ -32,4 +32,16 @@ describe 'Entity' do
       expect(response).to be_a Hash
     end
   end
+
+  describe '#find' do
+    before do
+      stub_request(:get, 'http://google.com/entities/asdf')
+          .to_return(:body => {a: 'b'}.to_json)
+    end
+
+    it 'sends data' do
+      response = GlobalRegistry::Entity.find('asdf')
+      expect(response).to be_a Hash
+    end
+  end
 end
