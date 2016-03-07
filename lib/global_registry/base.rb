@@ -11,48 +11,49 @@ module GlobalRegistry
     end
 
     def self.find(id, params = {})
-      request(:get, params, path_with_id(id))
+      new.find(id, params)
     end
     def find(id, params = {})
       request(:get, params, path_with_id(id))
     end
 
     def self.get(params = {})
-      request(:get, params)
+      new.get(params)
     end
     def get(params = {})
       request(:get, params)
     end
 
     def self.post(params = {})
-      request(:post, params)
+      new.post(params)
     end
     def post(params = {})
       request(:post, params)
     end
 
     def self.put(id, params = {})
-      request(:put, params, path_with_id(id))
+      new.put(id, params)
     end
     def put(id, params = {})
       request(:put, params, path_with_id(id))
     end
 
     def self.delete(id)
-      request(:delete, {}, path_with_id(id))
+      new.delete(id)
     end
     def delete(id)
       request(:delete, {}, path_with_id(id))
     end
 
     def self.delete_or_ignore(id)
-      begin
-        delete(id)
-      rescue RestClient::Exception => e
-        unless e.response.code.to_i == 404
-          raise
-        end
-      end
+      delete(id)
+    rescue RestClient::Exception => e
+      raise unless e.response.code.to_i == 404
+    end
+    def delete_or_ignore(id)
+      delete(id)
+    rescue RestClient::Exception => e
+      raise unless e.response.code.to_i == 404
     end
 
 
