@@ -64,25 +64,29 @@ module GlobalRegistry
     def request(method, params, path = nil, headers = {})
       raise 'You need to configure GlobalRegistry with your access_token.' unless access_token
 
-      path ||= default_path
-      url = base_url
-      url += '/' unless url.last == '/'
-      url += path
+      url = if base_url.starts_with? 'http'
+              Addressable::URI.parse(base_url)
+            else
+              Addressable::URI.parse("http://#{base_url}")
+            end
+      url.path = path || default_path
+      url.query_values = headers.delete(:params) if headers[:params]
 
       case method
       when :post
         post_headers = default_headers.merge(content_type: :json, timeout: -1).merge(headers)
-        RestClient.post(url, params.to_json, post_headers) { |response, request, result, &block|
+        RestClient.post(url.to_s, params.to_json, post_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       when :put
         put_headers = default_headers.merge(content_type: :json, timeout: -1).merge(headers)
-        RestClient.put(url, params.to_json, put_headers) { |response, request, result, &block|
+        RestClient.put(url.to_s, params.to_json, put_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       else
-        get_args = { method: method, url: url, timeout: -1,
-                     headers: default_headers.merge(params: params).merge(headers)
+        url.query_values = (url.query_values || {}).merge(params) if params.any?
+        get_args = { method: method, url: url.to_s, timeout: -1,
+                     headers: default_headers.merge(headers)
                    }
         RestClient::Request.execute(get_args) { |response, request, result, &block|
           handle_response(response, request, result)
