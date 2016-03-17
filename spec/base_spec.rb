@@ -24,6 +24,28 @@ describe 'Base' do
     end
   end
 
+  describe '#get_all_pages' do
+    it 'aggregates results from all pages' do
+      page1 = {
+        entity_types: [{ id: '1' }],
+        meta: { page: 1, next_page: true, from: 1, to: 1 }
+      }
+      page2 = {
+        entity_types: [{ id: '2' }],
+        meta: { page: 2, next_page: false, from: 2, to: 2 }
+      }
+      stub_request(:get, 'http://google.com/bases')
+        .with(headers: { authorization: 'Bearer asdf' })
+        .to_return(body: page1.to_json)
+      stub_request(:get, 'http://google.com/bases?page=2')
+        .with(headers: { authorization: 'Bearer asdf' })
+        .to_return(body: page2.to_json)
+
+      expect(GlobalRegistry::Base.get_all_pages)
+        .to eq('entity_types' => [{ 'id' => '1' }, { 'id' => '2' }])
+    end
+  end
+
   describe '#find' do
     it 'correctly handles array params' do
       @custom_gr_url = stub_request(:get, 'http://google.com/bases/1?a[]=b&a[]=c')

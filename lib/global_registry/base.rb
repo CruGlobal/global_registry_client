@@ -1,6 +1,7 @@
 require 'rest-client'
 require 'oj'
 require 'retryable'
+require 'addressable/uri'
 
 module GlobalRegistry
   class Base
@@ -22,6 +23,24 @@ module GlobalRegistry
     end
     def get(params = {}, headers = {})
       request(:get, params, nil, headers)
+    end
+    def self.get_all_pages(params = {}, headers = {})
+      result = get(params, headers)
+      overall_result = result
+      loop do
+        break unless result['meta'] && result['meta']['next_page']
+        page = result['meta']['page'].to_i + 1
+        result = get(params.merge(page: page), headers)
+        add_result(overall_result, result)
+      end
+      overall_result
+    end
+    def self.add_result(overall_result, result)
+      overall_result.each do |key, value|
+        next unless value.is_a?(Array)
+        overall_result[key] = value.concat(result[key])
+      end
+      overall_result.delete('meta')
     end
 
     def self.post(params = {}, headers = {})
@@ -136,7 +155,3 @@ module GlobalRegistry
     end
   end
 end
-
-
-
-
