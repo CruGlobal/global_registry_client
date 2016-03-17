@@ -25,15 +25,9 @@ module GlobalRegistry
       request(:get, params, nil, headers)
     end
     def get_all_pages(params = {}, headers = {})
-      result = get(params, headers)
-      overall_result = result
-      loop do
-        break unless result['meta'] && result['meta']['next_page']
-        page = result['meta']['page'].to_i + 1
-        result = get(params.merge(page: page), headers)
-        add_result(overall_result, result)
-      end
-      overall_result
+      results = results_from_all_pages(params, headers)
+      return results unless block_given?
+      results.each { |result| yield result }
     end
 
     def self.post(params = {}, headers = {})
@@ -145,6 +139,19 @@ module GlobalRegistry
 
     def access_token
       @access_token || GlobalRegistry.access_token
+    end
+
+    def results_from_all_pages(params, headers)
+      result = get(params, headers)
+      overall_result = result
+      loop do
+        break unless result['meta'] && result['meta']['next_page']
+        page = result['meta']['page'].to_i + 1
+        result = get(params.merge(page: page), headers)
+        add_result(overall_result, result)
+      end
+      # Return the root result node
+      overall_result.values.first
     end
 
     def add_result(overall_result, result)
