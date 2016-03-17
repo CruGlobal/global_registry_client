@@ -24,7 +24,7 @@ module GlobalRegistry
     def get(params = {}, headers = {})
       request(:get, params, nil, headers)
     end
-    def self.get_all_pages(params = {}, headers = {})
+    def get_all_pages(params = {}, headers = {})
       result = get(params, headers)
       overall_result = result
       loop do
@@ -34,13 +34,6 @@ module GlobalRegistry
         add_result(overall_result, result)
       end
       overall_result
-    end
-    def self.add_result(overall_result, result)
-      overall_result.each do |key, value|
-        next unless value.is_a?(Array)
-        overall_result[key] = value.concat(result[key])
-      end
-      overall_result.delete('meta')
     end
 
     def self.post(params = {}, headers = {})
@@ -152,6 +145,14 @@ module GlobalRegistry
 
     def access_token
       @access_token || GlobalRegistry.access_token
+    end
+
+    def add_result(overall_result, result)
+      overall_result.each do |key, value|
+        next unless value.is_a?(Array)
+        overall_result[key] = value.concat(result[key])
+      end
+      overall_result.delete('meta')
     end
   end
 end
