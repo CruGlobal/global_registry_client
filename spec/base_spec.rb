@@ -41,7 +41,7 @@ describe 'Base' do
         .with(headers: { authorization: 'Bearer asdf' })
         .to_return(body: page2.to_json)
 
-      expect(GlobalRegistry::Base.get_all_pages)
+      expect(GlobalRegistry::Base.new(access_token: 'asdf').get_all_pages)
         .to eq('entity_types' => [{ 'id' => '1' }, { 'id' => '2' }])
     end
   end
