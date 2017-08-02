@@ -80,18 +80,18 @@ module GlobalRegistry
 
       case method
       when :post
-        post_headers = default_headers.merge(content_type: :json, timeout: -1).merge(headers)
+        post_headers = default_headers.merge(content_type: :json, timeout: nil).merge(headers)
         RestClient.post(url.to_s, params.to_json, post_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       when :put
-        put_headers = default_headers.merge(content_type: :json, timeout: -1).merge(headers)
+        put_headers = default_headers.merge(content_type: :json, timeout: nil).merge(headers)
         RestClient.put(url.to_s, params.to_json, put_headers) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       else
         url.query_values = (url.query_values || {}).merge(params) if params.any?
-        get_args = { method: method, url: url.to_s, timeout: -1,
+        get_args = { method: method, url: url.to_s, timeout: nil,
                      headers: default_headers.merge(headers)
                    }
         RestClient::Request.execute(get_args) { |response, request, result, &block|
