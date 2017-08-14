@@ -17,7 +17,7 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ['lib']
 
-  gem.add_dependency('rest-client', '~> 1.6', '>= 1.6.7')
+  gem.add_dependency('rest-client', '>= 1.6.7', '< 3.0.0')
   gem.add_dependency('oj', '~> 2.13')
   gem.add_dependency('oj_mimic_json')
   gem.add_dependency('activesupport')
