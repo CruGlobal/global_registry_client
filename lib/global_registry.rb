@@ -7,7 +7,7 @@ end
 
 module GlobalRegistry
   class << self
-    attr_accessor :base_url, :access_token
+    attr_accessor :base_url, :access_token, :proxy_url
 
     def configure
       yield self
