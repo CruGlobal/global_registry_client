@@ -1,5 +1,6 @@
 require 'active_support/core_ext/string/inflections'
 require 'global_registry/base'
+require 'global_registry/exceptions'
 
 Dir[File.dirname(__FILE__) + '/global_registry/*.rb'].each do |file|
   require file
