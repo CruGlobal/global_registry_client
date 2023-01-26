@@ -121,11 +121,11 @@ module GlobalRegistry
       when 200..299
         Oj.load(response)
       when 400
-        raise GlobalRegistry::BadRequest, response
+        raise GlobalRegistry::BadRequest.new(response)
       when 404
-        raise GlobalRegistry::ResourceNotFound, response
+        raise GlobalRegistry::ResourceNotFound.new(response)
       when 500
-        raise GlobalRegistry::InternalServerError, response
+        raise GlobalRegistry::InternalServerError.new(response)
       else
         puts response.inspect
         puts request.inspect
