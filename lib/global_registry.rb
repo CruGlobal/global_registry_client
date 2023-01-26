@@ -1,14 +1,15 @@
-require 'active_support/core_ext/string/inflections'
-require 'global_registry/base'
-require 'global_registry/exceptions'
+require "active_support/core_ext/string/inflections"
+require "global_registry/base"
+require "global_registry/exceptions"
 
-Dir[File.dirname(__FILE__) + '/global_registry/*.rb'].each do |file|
+Dir[File.dirname(__FILE__) + "/global_registry/*.rb"].each do |file|
   require file
 end
 
 module GlobalRegistry
   class << self
-    attr_accessor :base_url, :access_token
+    attr_accessor :access_token
+    attr_writer :base_url
 
     def configure
       yield self
@@ -17,7 +18,5 @@ module GlobalRegistry
     def base_url
       @base_url ||= "https://api.global-registry.org/"
     end
-
   end
 end
-
