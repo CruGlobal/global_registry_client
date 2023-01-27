@@ -1,7 +1,7 @@
-require 'rest-client'
-require 'oj'
-require 'retryable'
-require 'addressable/uri'
+require "rest-client"
+require "oj"
+require "retryable"
+require "addressable/uri"
 
 module GlobalRegistry
   class Base
@@ -14,6 +14,7 @@ module GlobalRegistry
     def self.find(id, params = {}, headers = {})
       new.find(id, params, headers)
     end
+
     def find(id, params = {}, headers = {})
       request(:get, params, path_with_id(id), headers)
     end
@@ -21,9 +22,11 @@ module GlobalRegistry
     def self.get(params = {}, headers = {})
       new.get(params, headers)
     end
+
     def get(params = {}, headers = {})
       request(:get, params, nil, headers)
     end
+
     def get_all_pages(params = {}, headers = {})
       results = results_from_all_pages(params, headers)
       return results unless block_given?
@@ -33,6 +36,7 @@ module GlobalRegistry
     def self.post(params = {}, headers = {})
       new.post(params, headers)
     end
+
     def post(params = {}, headers = {})
       request(:post, params, nil, headers)
     end
@@ -40,6 +44,7 @@ module GlobalRegistry
     def self.put(id, params = {}, headers = {})
       new.put(id, params, headers)
     end
+
     def put(id, params = {}, headers = {})
       request(:put, params, path_with_id(id), headers)
     end
@@ -47,6 +52,7 @@ module GlobalRegistry
     def self.delete(id, headers = {})
       new.delete(id, headers)
     end
+
     def delete(id, headers = {})
       request(:delete, {}, path_with_id(id), headers)
     end
@@ -56,25 +62,25 @@ module GlobalRegistry
     rescue RestClient::Exception => e
       raise unless e.response.code.to_i == 404
     end
+
     def delete_or_ignore(id, headers = {})
       delete(id, headers)
     rescue RestClient::Exception => e
       raise unless e.response.code.to_i == 404
     end
 
-
     def self.request(method, params, path = nil, headers = {})
       new.request(method, params, path, headers)
     end
 
     def request(method, params, path = nil, headers = {})
-      raise 'You need to configure GlobalRegistry with your access_token.' unless access_token
+      raise "You need to configure GlobalRegistry with your access_token." unless access_token
 
-      url = if base_url.starts_with? 'http'
-              Addressable::URI.parse(base_url)
-            else
-              Addressable::URI.parse("http://#{base_url}")
-            end
+      url = if base_url.starts_with? "http"
+        Addressable::URI.parse(base_url)
+      else
+        Addressable::URI.parse("http://#{base_url}")
+      end
       url.path = path || default_path
       url.query_values = headers.delete(:params) if headers[:params]
 
@@ -91,9 +97,8 @@ module GlobalRegistry
         }
       else
         url.query_values = (url.query_values || {}).merge(params) if params.any?
-        get_args = { method: method, url: url.to_s, timeout: nil,
-                     headers: default_headers.merge(headers)
-                   }
+        get_args = {method: method, url: url.to_s, timeout: nil,
+                    headers: default_headers.merge(headers)}
         RestClient::Request.execute(get_args) { |response, request, result, &block|
           handle_response(response, request, result)
         }
@@ -101,7 +106,7 @@ module GlobalRegistry
     end
 
     def default_path
-      self.class.to_s.split('::').last.underscore.pluralize
+      self.class.to_s.split("::").last.underscore.pluralize
     end
 
     def path_with_id(id)
@@ -111,8 +116,8 @@ module GlobalRegistry
     private
 
     def default_headers
-      headers = { authorization: "Bearer #{access_token}", accept: :json }
-      headers = headers.merge('X-Forwarded-For': @xff) if @xff.present?
+      headers = {authorization: "Bearer #{access_token}", accept: :json}
+      headers = headers.merge("X-Forwarded-For": @xff) if @xff.present?
       headers
     end
 
@@ -145,8 +150,8 @@ module GlobalRegistry
       result = get(params, headers)
       overall_result = result
       loop do
-        break unless result['meta'] && result['meta']['next_page']
-        page = result['meta']['page'].to_i + 1
+        break unless result["meta"] && result["meta"]["next_page"]
+        page = result["meta"]["page"].to_i + 1
         result = get(params.merge(page: page), headers)
         add_result(overall_result, result)
       end
@@ -159,7 +164,7 @@ module GlobalRegistry
         next unless value.is_a?(Array)
         overall_result[key] = value.concat(result[key])
       end
-      overall_result.delete('meta')
+      overall_result.delete("meta")
     end
   end
 end
