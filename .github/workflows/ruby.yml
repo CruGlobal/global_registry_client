@@ -1,0 +1,29 @@
+name: Ruby
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    env:
+      RAILS_ENV: test
+
+    steps:
+      - name: Check out files
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: StandardRB
+        run: bundle exec standardrb --format simple
+
+      - name: RSpec tests
+        run: bundle exec rspec --color
