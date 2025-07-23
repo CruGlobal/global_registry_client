@@ -76,7 +76,7 @@ module GlobalRegistry
     def request(method, params, path = nil, headers = {})
       raise "You need to configure GlobalRegistry with your access_token." unless access_token
 
-      url = if base_url.starts_with? "http"
+      url = if base_url.start_with? "http"
         Addressable::URI.parse(base_url)
       else
         Addressable::URI.parse("http://#{base_url}")
@@ -111,22 +111,9 @@ module GlobalRegistry
         end
 
         handle_response(response)
-      rescue Faraday::Error => e
-        # Re-raise as appropriate custom exception based on status code if available
-        if e.response && e.response[:status]
-          case e.response[:status]
-          when 400
-            raise GlobalRegistry::BadRequest.new(e.message)
-          when 404
-            raise GlobalRegistry::ResourceNotFound.new(e.message)
-          when 500
-            raise GlobalRegistry::InternalServerError.new(e.message)
-          else
-            raise GlobalRegistry::OtherError.new(e.message)
-          end
-        else
-          raise GlobalRegistry::OtherError.new(e.message)
-        end
+      rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Faraday::SSLError => e
+        # Handle only network/transport errors, not HTTP status errors
+        raise GlobalRegistry::OtherError.new(e.message)
       end
     end
 
