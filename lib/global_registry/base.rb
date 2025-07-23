@@ -91,7 +91,7 @@ module GlobalRegistry
 
       # Set default headers
       request_headers = default_headers.merge(headers)
-      
+
       begin
         case method
         when :post
@@ -103,10 +103,10 @@ module GlobalRegistry
         when :get, :delete
           # Add query parameters for GET and DELETE requests
           query_params = params.any? ? params : nil
-          if method == :get
-            response = connection.get(url.path, query_params, request_headers)
+          response = if method == :get
+            connection.get(url.path, query_params, request_headers)
           else # :delete
-            response = connection.delete(url.path, query_params, request_headers)
+            connection.delete(url.path, query_params, request_headers)
           end
         end
 
