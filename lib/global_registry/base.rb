@@ -59,13 +59,13 @@ module GlobalRegistry
 
     def self.delete_or_ignore(id, headers = {})
       delete(id, headers)
-    rescue Faraday::ResourceNotFound
+    rescue GlobalRegistry::ResourceNotFound
       # Ignore 404 errors
     end
 
     def delete_or_ignore(id, headers = {})
       delete(id, headers)
-    rescue Faraday::ResourceNotFound
+    rescue GlobalRegistry::ResourceNotFound
       # Ignore 404 errors
     end
 
@@ -86,6 +86,7 @@ module GlobalRegistry
 
       # Create Faraday connection
       connection = Faraday.new(url: "#{url.scheme}://#{url.host}") do |faraday|
+        faraday.response :raise_error
         faraday.adapter Faraday.default_adapter
       end
 
@@ -110,10 +111,21 @@ module GlobalRegistry
           end
         end
 
-        handle_response(response)
+        # Parse successful response
+        Oj.load(response.body)
+      rescue Faraday::BadRequestError => e
+        raise GlobalRegistry::BadRequest.new(e.response[:status].to_s)
+      rescue Faraday::ResourceNotFound => e
+        raise GlobalRegistry::ResourceNotFound.new(e.response[:status].to_s)
+      rescue Faraday::ServerError => e
+        raise GlobalRegistry::InternalServerError.new(e.response[:status].to_s)
       rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Faraday::SSLError => e
         # Handle only network/transport errors, not HTTP status errors
         raise GlobalRegistry::OtherError.new(e.message)
+      rescue Faraday::Error => e
+        # Handle any other Faraday errors
+        status = e.response ? e.response[:status].to_s : "unknown"
+        raise GlobalRegistry::OtherError.new(status)
       end
     end
 
@@ -131,22 +143,6 @@ module GlobalRegistry
       headers = {"Authorization" => "Bearer #{access_token}", "Accept" => "application/json"}
       headers = headers.merge("X-Forwarded-For" => @xff) if @xff.present?
       headers
-    end
-
-    def handle_response(response)
-      case response.status
-      when 200..299
-        Oj.load(response.body)
-      when 400
-        raise GlobalRegistry::BadRequest.new(response.status.to_s)
-      when 404
-        raise GlobalRegistry::ResourceNotFound.new(response.status.to_s)
-      when 500
-        raise GlobalRegistry::InternalServerError.new(response.status.to_s)
-      else
-        puts response.inspect
-        raise GlobalRegistry::OtherError, response.status.to_s
-      end
     end
 
     def base_url
