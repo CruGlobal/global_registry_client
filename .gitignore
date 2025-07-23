@@ -15,4 +15,5 @@ test/tmp
 test/version_tmp
 tmp
 vendor/ruby
+vendor/bundle
 .idea
