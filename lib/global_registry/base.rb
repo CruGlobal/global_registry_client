@@ -102,8 +102,8 @@ module GlobalRegistry
           request_headers["Content-Type"] = "application/json"
           response = connection.put(url.path, params.to_json, request_headers)
         when :get, :delete
-          # Add query parameters for GET and DELETE requests
-          query_params = params.any? ? params : nil
+          # Merge query parameters from URL and params
+          query_params = (url.query_values || {}).merge(params.any? ? params : {})
           response = if method == :get
             connection.get(url.path, query_params, request_headers)
           else # :delete
@@ -114,18 +114,18 @@ module GlobalRegistry
         # Parse successful response
         Oj.load(response.body)
       rescue Faraday::BadRequestError => e
-        raise GlobalRegistry::BadRequest.new(e.response[:status].to_s)
+        raise GlobalRegistry::BadRequest.new(e.response)
       rescue Faraday::ResourceNotFound => e
-        raise GlobalRegistry::ResourceNotFound.new(e.response[:status].to_s)
+        raise GlobalRegistry::ResourceNotFound.new(e.response)
       rescue Faraday::ServerError => e
-        raise GlobalRegistry::InternalServerError.new(e.response[:status].to_s)
+        raise GlobalRegistry::InternalServerError.new(e.response)
       rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Faraday::SSLError => e
         # Handle only network/transport errors, not HTTP status errors
         raise GlobalRegistry::OtherError.new(e.message)
       rescue Faraday::Error => e
         # Handle any other Faraday errors
-        status = e.response ? e.response[:status].to_s : "unknown"
-        raise GlobalRegistry::OtherError.new(status)
+        response = e.response || "unknown"
+        raise GlobalRegistry::OtherError.new(response)
       end
     end
 
