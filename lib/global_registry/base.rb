@@ -1,4 +1,4 @@
-require "rest-client"
+require "faraday"
 require "oj"
 require "retryable"
 require "addressable/uri"
@@ -59,14 +59,14 @@ module GlobalRegistry
 
     def self.delete_or_ignore(id, headers = {})
       delete(id, headers)
-    rescue RestClient::Exception => e
-      raise unless e.response.code.to_i == 404
+    rescue GlobalRegistry::ResourceNotFound
+      # Ignore 404 errors
     end
 
     def delete_or_ignore(id, headers = {})
       delete(id, headers)
-    rescue RestClient::Exception => e
-      raise unless e.response.code.to_i == 404
+    rescue GlobalRegistry::ResourceNotFound
+      # Ignore 404 errors
     end
 
     def self.request(method, params, path = nil, headers = {})
@@ -76,7 +76,7 @@ module GlobalRegistry
     def request(method, params, path = nil, headers = {})
       raise "You need to configure GlobalRegistry with your access_token." unless access_token
 
-      url = if base_url.starts_with? "http"
+      url = if base_url.start_with? "http"
         Addressable::URI.parse(base_url)
       else
         Addressable::URI.parse("http://#{base_url}")
@@ -84,24 +84,48 @@ module GlobalRegistry
       url.path = path || default_path
       url.query_values = headers.delete(:params) if headers[:params]
 
-      case method
-      when :post
-        post_headers = default_headers.merge(content_type: :json, timeout: nil).merge(headers)
-        RestClient.post(url.to_s, params.to_json, post_headers) { |response, request, result, &block|
-          handle_response(response, request, result)
-        }
-      when :put
-        put_headers = default_headers.merge(content_type: :json, timeout: nil).merge(headers)
-        RestClient.put(url.to_s, params.to_json, put_headers) { |response, request, result, &block|
-          handle_response(response, request, result)
-        }
-      else
-        url.query_values = (url.query_values || {}).merge(params) if params.any?
-        get_args = {method: method, url: url.to_s, timeout: nil,
-                    headers: default_headers.merge(headers)}
-        RestClient::Request.execute(get_args) { |response, request, result, &block|
-          handle_response(response, request, result)
-        }
+      # Create Faraday connection
+      connection = Faraday.new(url: "#{url.scheme}://#{url.host}") do |faraday|
+        faraday.response :raise_error
+        faraday.adapter Faraday.default_adapter
+      end
+
+      # Set default headers
+      request_headers = default_headers.merge(headers)
+
+      begin
+        case method
+        when :post
+          request_headers["Content-Type"] = "application/json"
+          response = connection.post(url.path, params.to_json, request_headers)
+        when :put
+          request_headers["Content-Type"] = "application/json"
+          response = connection.put(url.path, params.to_json, request_headers)
+        when :get, :delete
+          # Merge query parameters from URL and params
+          query_params = (url.query_values || {}).merge(params.any? ? params : {})
+          response = if method == :get
+            connection.get(url.path, query_params, request_headers)
+          else # :delete
+            connection.delete(url.path, query_params, request_headers)
+          end
+        end
+
+        # Parse successful response
+        Oj.load(response.body)
+      rescue Faraday::BadRequestError => e
+        raise GlobalRegistry::BadRequest.new(e.response)
+      rescue Faraday::ResourceNotFound => e
+        raise GlobalRegistry::ResourceNotFound.new(e.response)
+      rescue Faraday::ServerError => e
+        raise GlobalRegistry::InternalServerError.new(e.response)
+      rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Faraday::SSLError => e
+        # Handle only network/transport errors, not HTTP status errors
+        raise GlobalRegistry::OtherError.new(e.message)
+      rescue Faraday::Error => e
+        # Handle any other Faraday errors
+        response = e.response || "unknown"
+        raise GlobalRegistry::OtherError.new(response)
       end
     end
 
@@ -116,26 +140,9 @@ module GlobalRegistry
     private
 
     def default_headers
-      headers = {authorization: "Bearer #{access_token}", accept: :json}
-      headers = headers.merge("X-Forwarded-For": @xff) if @xff.present?
+      headers = {"Authorization" => "Bearer #{access_token}", "Accept" => "application/json"}
+      headers = headers.merge("X-Forwarded-For" => @xff) if @xff.present?
       headers
-    end
-
-    def handle_response(response, request, result)
-      case response.code
-      when 200..299
-        Oj.load(response)
-      when 400
-        raise GlobalRegistry::BadRequest.new(response)
-      when 404
-        raise GlobalRegistry::ResourceNotFound.new(response)
-      when 500
-        raise GlobalRegistry::InternalServerError.new(response)
-      else
-        puts response.inspect
-        puts request.inspect
-        raise GlobalRegistry::OtherError, response
-      end
     end
 
     def base_url
