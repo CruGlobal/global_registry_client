@@ -8,7 +8,7 @@ end
 
 module GlobalRegistry
   class << self
-    attr_accessor :access_token
+    attr_accessor :access_token, :proxy_url
     attr_writer :base_url
 
     def configure

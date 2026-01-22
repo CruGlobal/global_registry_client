@@ -87,18 +87,23 @@ module GlobalRegistry
       case method
       when :post
         post_headers = default_headers.merge(content_type: :json, timeout: nil).merge(headers)
-        RestClient.post(url.to_s, params.to_json, post_headers) { |response, request, result, &block|
+        post_args = { method: method, url: url.to_s, timeout: nil, payload: params.to_json,
+                      headers: post_headers, proxy: proxy_url }
+        RestClient::Request.execute(post_args) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       when :put
         put_headers = default_headers.merge(content_type: :json, timeout: nil).merge(headers)
-        RestClient.put(url.to_s, params.to_json, put_headers) { |response, request, result, &block|
+        put_args = { method: method, url: url.to_s, timeout: nil, payload: params.to_json,
+                     headers: put_headers, proxy: proxy_url }
+        RestClient::Request.execute(put_args) { |response, request, result, &block|
           handle_response(response, request, result)
         }
       else
         url.query_values = (url.query_values || {}).merge(params) if params.any?
-        get_args = {method: method, url: url.to_s, timeout: nil,
-                    headers: default_headers.merge(headers)}
+        get_args = { method: method, url: url.to_s, timeout: nil,
+                     headers: default_headers.merge(headers),
+                     proxy: proxy_url }
         RestClient::Request.execute(get_args) { |response, request, result, &block|
           handle_response(response, request, result)
         }
@@ -144,6 +149,10 @@ module GlobalRegistry
 
     def access_token
       @access_token || GlobalRegistry.access_token
+    end
+
+    def proxy_url
+      @proxy_url || GlobalRegistry.proxy_url
     end
 
     def results_from_all_pages(params, headers)
